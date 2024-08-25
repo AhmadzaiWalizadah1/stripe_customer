@@ -1,1 +1,8 @@
-Stripe API, Bootstrap, and Node.js, Project. in order to save the customer records and customer subscription recoreds.
+Application to store customer personal Information, payment Infos, and their Subscriptions in a third-party Database.
+Technologies: 
+#Stripe-API
+#Bootstrap 
+#Node.js 
+#Handlebars Templating engine.
+
+
