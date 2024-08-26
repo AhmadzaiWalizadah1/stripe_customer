@@ -64,9 +64,9 @@ var listCustomers  = function(err, customers){
 // Create a customer in stripe
 var createCustomer = function(){
     var param = {};
-    param.email = 'admin.ahmad@gmail.com';
-    param.name = 'Ahmadzai Walizadah';
-    param.description = 'The Admin';
+    param.email = 'Well.max@gmail.com';
+    param.name = 'Max Well';
+    param.description = 'The Supervisor';
 
     stripe.customers.create(param, (err,customer)=>{
         if(err)
@@ -77,8 +77,8 @@ var createCustomer = function(){
         console.log('something went wrong...');
     });
 }
-// Function call 
-//createCustomer();
+    // Function call 
+    // createCustomer();
 
 
 // Function to retrieve all customers from Stripe and store them in MySQL
@@ -88,14 +88,13 @@ async function storeData() {
       const customers = await stripe.customers.list();
 
       customers.data.forEach(customer =>{
-
         const customerData = {
             name: customer.name,
             email:customer.email, 
             stripe_customer_id: customer.id,
-            // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
+            //subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
         }
-         
+    
         const query = `INSERT INTO customers (name, email, stripe_customer_id) VALUES (?, ?, ?)`;
          db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id], (error, results) => {
            if (error) {
@@ -104,73 +103,21 @@ async function storeData() {
              console.log(`Inserted customer with ID: ${results.insertId}`);
            }
          });
-       });
-}
 
-    storeData();
-
-
-
+ 
+     });
+ }
+   // storeData();
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Create Customer Route
-    app.post('/create-customer', async (req, res) => {
-    const { name, email } = req.body;
-    try {
-        const customer = await stripe.customers.create({ name, email });
-        
-        // Insert customer into MySQL
-        db.query('INSERT INTO customers (name, email, stripe_customer_id) VALUES (?, ?, ?)', 
-            [name, email, customer.id],
-            (error, results) => {
-                if (error) throw error;
-                res.json({ customer, subscription: null });
-            }
-        );
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-app.post('/create-subscription/:customerId', async (req, res) => {
+async function createSubscription(req, res)  {
     const { customerId } = req.params;
     const { priceId } = req.body; // This should be the ID of the Price object in Stripe
     try {
         const subscription = await stripe.subscriptions.create({
-            customer: customerId,
+            customer: customer.id,
             items: [{ price: priceId }],
         });
         // Update MySQL customer record
@@ -184,7 +131,10 @@ app.post('/create-subscription/:customerId', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
+};
+
+// function call 
+// createSubscription();
 
 
 
