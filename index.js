@@ -4,20 +4,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const Stripe = require('stripe');
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = Stripe('sk_test_51PqbrQIC80XBakK1ZBJIWKcchvauBdTDppLeEyUVeg40WQsSLecVtjNUtN18w9gExUeboe7sAmkSOinCZmGJyMJT00vE9tb4RG');
 const app = express();
 const path = require('path');
 const fs = require('fs');
 const handlebars = require('express-handlebars');
 const hbs = require('hbs');
+const { log } = require('console');
 const PORT = process.env.PORT || 3000;
-
-
-fs.readdirSync('./views/pages').forEach(file => {
-    const partialName = path.basename(file, path.extname(file));
-    const filePath = path.join(__dirname, 'views', 'pages', file);
-    hbs.registerPartial(partialName, fs.readFileSync(filePath, 'utf-8'));
-});
 
 // Handlebars setup
 app.set('view engine','handlebars');
@@ -40,10 +34,10 @@ app.use(bodyParser.json());
 
 // MySQL connection
 const db = mysql.createConnection({
-    host: process.env.DATABASE_HOST,
-    user: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "stripe_customer",
 });
 // Connect to MySQL
 db.connect(err => {
@@ -52,11 +46,109 @@ db.connect(err => {
     }
     console.log('MySQL Connected...');
 });
+// Retrieve all customers from stripe and display it to the console.
+var listCustomers  = function(err, customers){
+    stripe.customers.list(function(err,customers){
+        if(err){
+            console.log(err)
+        }
+        else {
+           var persons = console.log(JSON.stringify(customers,null,2)); 
 
-//   Customer Interactions Begin
+        }           
+    });
+}
+// Function call 
+//   listCustomers();
+
+// Create a customer in stripe
+var createCustomer = function(){
+    var param = {};
+    param.email = 'admin.ahmad@gmail.com';
+    param.name = 'Ahmadzai Walizadah';
+    param.description = 'The Admin';
+
+    stripe.customers.create(param, (err,customer)=>{
+        if(err)
+            console.log(err)
+        else if(customer)
+            console.log('Customer created successfully.');
+        else 
+        console.log('something went wrong...');
+    });
+}
+// Function call 
+//createCustomer();
+
+
+// Function to retrieve all customers from Stripe and store them in MySQL
+const pool = mysql.createPool(db);
+async function storeData() {
+
+      const customers = await stripe.customers.list();
+
+      customers.data.forEach(customer =>{
+
+        const customerData = {
+            name: customer.name,
+            email:customer.email, 
+            stripe_customer_id: customer.id,
+            // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
+        }
+         
+        const query = `INSERT INTO customers (name, email, stripe_customer_id) VALUES (?, ?, ?)`;
+         db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id], (error, results) => {
+           if (error) {
+             console.error('Error inserting customer data into MySQL:', error);
+           } else {
+             console.log(`Inserted customer with ID: ${results.insertId}`);
+           }
+         });
+       });
+}
+
+    storeData();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Create Customer Route
-app.post('/create-customer', async (req, res) => {
+    app.post('/create-customer', async (req, res) => {
     const { name, email } = req.body;
     try {
         const customer = await stripe.customers.create({ name, email });
@@ -73,7 +165,6 @@ app.post('/create-customer', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// Create Subscription Route
 app.post('/create-subscription/:customerId', async (req, res) => {
     const { customerId } = req.params;
     const { priceId } = req.body; // This should be the ID of the Price object in Stripe
@@ -94,6 +185,15 @@ app.post('/create-subscription/:customerId', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+
+
+
+
+
+
+
 // Cancel Subscription Route
 app.post('/cancel-subscription/:customerId', async (req, res) => {
     const { customerId } = req.params;
