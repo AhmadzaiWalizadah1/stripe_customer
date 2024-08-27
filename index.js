@@ -92,7 +92,7 @@ async function storeData() {
             name: customer.name,
             email:customer.email, 
             stripe_customer_id: customer.id,
-            //subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
+            // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
         }
     
         const query = `INSERT INTO customers (name, email, stripe_customer_id) VALUES (?, ?, ?)`;
@@ -107,46 +107,53 @@ async function storeData() {
  
      });
  }
-   // storeData();
+//    storeData();
 
 
-
-
+// Create subscription
 async function createSubscription(req, res)  {
-    const { customerId } = req.params;
-    const { priceId } = req.body; // This should be the ID of the Price object in Stripe
-    try {
+        const customerId = 'cus_QjRNsDIdSlWInF';
+        const priceId = 'price_1PsJyoIC80XBakK1g6wkOWQa';
+
+      try {
         const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{ price: priceId }],
-        });
+            customer: customerId,
+            items: [
+              {
+                price: priceId,
+              },
+            ],
+          });
         // Update MySQL customer record
         db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?', 
             [subscription.id, customerId],
             (error) => {
                 if (error) throw error;
-                res.json({ subscription });
             }
         );
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.log(error);
     }
 };
 
 // function call 
-// createSubscription();
+ createSubscription();
 
 
+// Get all Subscriptions 
+async function listSubscriptions(){
+        const subscriptions = await stripe.subscriptions.list({});
+        console.log(subscriptions);
+ }
+
+    // listSubscriptions();
 
 
-
-
-
-
-
+    
 // Cancel Subscription Route
-app.post('/cancel-subscription/:customerId', async (req, res) => {
-    const { customerId } = req.params;
+async function cancelSubscription (req, res){ 
+   
+    const customerId = 'cus_QjRNsDIdSlWInF' ;
     
     try {
         // Retrieve the customer record from MySQL
@@ -159,7 +166,7 @@ app.post('/cancel-subscription/:customerId', async (req, res) => {
                 }
                 const subscriptionId = results[0].subscription_id;
                 // Cancel the subscription in Stripe
-                await stripe.subscriptions.del(subscriptionId);
+                await stripe.subscriptions.cancel(subscriptionId);
                 // Update MySQL customer record
                 db.query('UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE stripe_customer_id = ?', 
                     [customerId],
@@ -173,14 +180,10 @@ app.post('/cancel-subscription/:customerId', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
-// Get Customer Data Route
-app.get('/customers', (req, res) => {
-    db.query('SELECT * FROM customers', (error, results) => {
-        if (error) throw error;
-        res.json(results);
-    });
-});
+}
+        // function call 
+        // cancelSubscription();
+
 
 app.get('/', (req, res) => {
     res.render('home');
