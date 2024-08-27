@@ -92,10 +92,11 @@ async function storeData() {
             name: customer.name,
             email:customer.email, 
             stripe_customer_id: customer.id,
-            // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null
+            // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null,
+            // active_abonnment: 1 ? customer.subscriptions.data[0].id :0
         }
     
-        const query = `INSERT INTO customers (name, email, stripe_customer_id) VALUES (?, ?, ?)`;
+        const query = `INSERT INTO customers (name, email, stripe_customer_id,subscription_id, active_abonnment) VALUES (?, ?, ?,?,?)`;
          db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id], (error, results) => {
            if (error) {
              console.error('Error inserting customer data into MySQL:', error);
@@ -107,7 +108,7 @@ async function storeData() {
  
      });
  }
-//    storeData();
+  storeData();
 
 
 // Create subscription
@@ -135,7 +136,6 @@ async function createSubscription(req, res)  {
         console.log(error);
     }
 };
-
 // function call 
  createSubscription();
 
@@ -149,7 +149,7 @@ async function listSubscriptions(){
     // listSubscriptions();
 
 
-    
+
 // Cancel Subscription Route
 async function cancelSubscription (req, res){ 
    
