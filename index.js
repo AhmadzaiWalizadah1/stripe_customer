@@ -81,7 +81,6 @@ var createCustomer = function(){
 
 
     // Function to retrieve all customers from Stripe and store them in MySQL
-    const pool = mysql.createPool(db);
     async function storeData() {
         const customers = await stripe.customers.list();
 
@@ -103,7 +102,7 @@ var createCustomer = function(){
         });
     }
     storeData();
-    
+
 // Create subscription
 async function createSubscription(req, res)  {
         const customerId = 'cus_QjRNsDIdSlWInF';
