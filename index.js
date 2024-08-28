@@ -1,5 +1,4 @@
 // require necessary packages
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
@@ -10,8 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const handlebars = require('express-handlebars');
 const hbs = require('hbs');
-const { log } = require('console');
-const PORT = process.env.PORT || 3000;
+const PORT =  3000;
 
 // Handlebars setup
 app.set('view engine','handlebars');
@@ -32,15 +30,14 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/
 // Middleware
 app.use(bodyParser.json());
 
+// DB Configuration
 const dbConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
     database: 'stripe_customer'
 }
-// MySQL connection
 const db = mysql.createConnection(dbConfig);
-// Connect to MySQL
 db.connect(err => {
     if (err) {
         throw err;
@@ -86,7 +83,6 @@ var createCustomer = function(){
     // Function to retrieve all customers from Stripe and store them in MySQL
     const pool = mysql.createPool(db);
     async function storeData() {
-
         const customers = await stripe.customers.list();
 
         customers.data.forEach(customer =>{
@@ -94,25 +90,20 @@ var createCustomer = function(){
                 name: customer.name,
                 email:customer.email, 
                 stripe_customer_id: customer.id,
-                // subscription_id: customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : null,
-                // active_abonnment: 1 ? customer.subscriptions.data[0].id :0
+                subscription_id: customer.subscriptions && customer.subscriptions.data && customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : 0
             }
-        
-            const query = `INSERT INTO customers (name, email, stripe_customer_id,subscription_id, active_abonnment) VALUES (?, ?, ?,?,?)`;
-            db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id,subscription_id,active_abonnment], (error, results) => {
+            const query = `INSERT INTO customers (name, email, stripe_customer_id,subscription_id) VALUES (?,?,?,?)`;
+            db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id,customerData.subscription_id], (error, results) => {
             if (error) {
                 console.error('Error inserting customer data into MySQL:', error);
             } else {
                 console.log(`Inserted customer with ID: ${results.insertId}`);
             }
             });
-
-    
         });
     }
-    // storeData();
-
-
+    storeData();
+    
 // Create subscription
 async function createSubscription(req, res)  {
         const customerId = 'cus_QjRNsDIdSlWInF';
