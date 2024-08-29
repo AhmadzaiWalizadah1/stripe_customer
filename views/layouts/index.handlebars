@@ -8,13 +8,19 @@
 <body>
     {{> header}}
 
-    <main>
-        {{{body}}}
+    <div class="row">
+        <div class="col-md-2 bg-white">
+            {{> sidebar}}      
+        </div>
+        <div class="col-md-10 shadow-sm" style="background-color:#ebe6e9;">
+            {{{body}}}
 
-    </main>
-
-    {{> footer}}
-
+             {{> footer}}
+        </div>
+       
+    </div>
+    
+    
     <script src="./js/bootstrap.bandle.min.js"></script>
 </body>
 </html>
