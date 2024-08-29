@@ -59,24 +59,41 @@ var listCustomers  = function(err, customers){
 // Function call
 //   listCustomers();
 
-// Create a customer in stripe
-var createCustomer = function(){
-    var param = {};
-    param.email = 'John.snow@gmail.com';
-    param.name = 'John Snow';
-    param.description = 'Game of Thrones series actor';
 
-    stripe.customers.create(param, (err,customer)=>{
-        if(err)
-            console.log(err)
-        else if(customer)
-            console.log('Customer created successfully.');
-        else
-        console.log('something went wrong...');
-    });
+// Create a customer in stripe
+async function createUser(name, email,description) {
+    try {
+        // Step 1: Check if the customer already exists in Stripe
+        const customers = await stripe.customers.list({
+            email: email,
+            limit: 1 // We only need to check for one existing customer
+        });
+        if (customers.data.length > 0) {
+            // Customer exists
+            return { success: false, message: 'User already exists' };
+        }
+        // Step 2: Create a new customer if not found
+        const newCustomer = await stripe.customers.create({
+            name: name,
+            email: email,
+            description: description
+        });
+        return { success: true, customer: newCustomer, message: 'User created successfully' };
+    } catch (error) {
+        console.error('Error creating user in Stripe:', error);
+        throw error; // You might want to return some error message or structure
+    }
 }
-    // Function call
-    // createCustomer();
+
+// Usage example
+async function useCase() {
+    const name = 'Megan Boon';
+    const email = 'Boon.Megan@gmail.com';
+    const description = "Blacklist series actress.";
+    const result = await createUser(name, email,description);
+    console.log(result); // Display the result to the user/client
+}
+//  useCase();
 
 
   async function retrieveAllCustomersAndSubscriptions() {
@@ -150,33 +167,58 @@ var createCustomer = function(){
 
 //   main();
 
-// Create subscription
-async function createSubscription(req, res)  {
-        const customerId = 'cus_QjSOCTNu8UCPl3';
-        const priceId = 'price_1PsJyoIC80XBakK1g6wkOWQa';
 
-      try {
+// Create subscription
+async function createSubscription(req, res) {
+    const customerId = 'cus_QjSOCTNu8UCPl3'; // The customer ID can be retrieved from req.body or req.params
+    const priceId = 'price_1PsJyoIC80XBakK1g6wkOWQa'; // The price ID can also be passed in as a parameter
+    try {
+        // Step 1: Check if the customer already has an active subscription with this price ID
+        const existingSubscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'active', // Check for active subscriptions only
+            expand: ['data.items']
+        });
+        const hasActiveSubscription = existingSubscriptions.data.some(subscription =>
+            subscription.items.data.some(item => item.price.id === priceId)
+        );
+        if (hasActiveSubscription) {
+            console.log('Customer has already a Subscription of this Type.');
+            return {success: false, message: 'Customer has already a Subscription of this Type.'}
+        }
+        // Step 2: Create the subscription since no active subscription exists
         const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [
-              {
-                price: priceId,
-              },
+                {
+                    price: priceId,
+                },
             ],
-          });
+        });
         // Update MySQL customer record
         db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?',
             [subscription.id, customerId],
             (error) => {
-                if (error) throw error;
+                if (error) 
+                    console.log('error updating customer ',error);
             }
         );
+        // Respond with the subscription details
+        console.log("Thanks for subscribing. We are glad to have you....");
+        return {success: true,subscription:subscription, message: "Thanks for subscribing. We are glad to have you...."}
     } catch (error) {
-        console.log(error);
+        console.error('Error creating subscription:', error);
+        let message = 'Internal server error';
+        if (error.type === 'StripeError') {
+            message = error.message;
+        }
+        return {success:false, message: 'internal error.'}
     }
-};
+}
 // function call
-//  createSubscription();
+//  createSubscription(); 
+
+
 
 
 // Get all Subscriptions
@@ -191,32 +233,35 @@ async function listSubscriptions(){
 // Cancel Subscription Route
 async function cancelSubscription (req, res){
 
-    const customerId = 'cus_QjRNsDIdSlWInF' ;
+    const customerId = 'cus_QjSOCTNu8UCPl3' ;
 
     try {
         // Retrieve the customer record from MySQL
-        db.query('SELECT subscription_id FROM customers WHERE stripe_customer_id = ?',
-            [customerId],
-            async (error, results) => {
-                if (error) throw error;
-                if (!results.length) {
-                    return res.status(404).json({ error: 'Customer not found' });
+        db.query('SELECT subscription_id FROM customers WHERE stripe_customer_id = ?',[customerId],async (error, results) => {
+                if (error){
+                    reject (error);
+                    resolve(results[0].subscription_exposed_id); 
                 }
-                const subscriptionId = results[0].subscription_id;
+                const subscriptionId = results[0].subscription_id;    
+                
+                if (!subscriptionId) {
+                    console.log('There is no such a Subscription.');
+                    return { success: false, message:'There is no such a Subscription.' };
+                }
                 // Cancel the subscription in Stripe
                 await stripe.subscriptions.cancel(subscriptionId);
                 // Update MySQL customer record
-                db.query('UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE stripe_customer_id = ?',
-                    [customerId],
-                    (error) => {
+                db.query('UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE stripe_customer_id = ?',[customerId],(error) => {
                         if (error) throw error;
-                        res.json({ success: true, message: 'Subscription canceled' });
+                        console.log('subscription canceled.');
+                        return { success: true, message: 'Subscription canceled' };
                     }
                 );
             }
         );
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.log(error)
+        return { error: error.message };
     }
 }
         // function call
