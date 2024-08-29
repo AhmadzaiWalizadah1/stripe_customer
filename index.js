@@ -1,7 +1,7 @@
 // require necessary packages
 const express = require('express');
 const bodyParser = require('body-parser');
-const mysql = require('mysql2');
+const mysql2 = require('mysql2');
 const Stripe = require('stripe');
 const stripe = Stripe('sk_test_51PqbrQIC80XBakK1ZBJIWKcchvauBdTDppLeEyUVeg40WQsSLecVtjNUtN18w9gExUeboe7sAmkSOinCZmGJyMJT00vE9tb4RG');
 const app = express();
@@ -37,14 +37,13 @@ const dbConfig = {
     password: '',
     database: 'stripe_customer'
 }
-const db = mysql.createConnection(dbConfig);
+const db = mysql2.createConnection(dbConfig);
 db.connect(err => {
     if (err) {
         throw err;
     }
     console.log('MySQL Connected...');
 });
-
 // Retrieve all customers from stripe and display it to the console.
 var listCustomers  = function(err, customers){
     stripe.customers.list(function(err,customers){
@@ -63,9 +62,9 @@ var listCustomers  = function(err, customers){
 // Create a customer in stripe
 var createCustomer = function(){
     var param = {};
-    param.email = 'Well.max@gmail.com';
-    param.name = 'Max Well';
-    param.description = 'The Supervisor';
+    param.email = 'John.snow@gmail.com';
+    param.name = 'John Snow';
+    param.description = 'Game of Thrones series actor';
 
     stripe.customers.create(param, (err,customer)=>{
         if(err)
@@ -80,32 +79,81 @@ var createCustomer = function(){
     // createCustomer();
 
 
-    // Function to retrieve all customers from Stripe and store them in MySQL
-    async function storeData() {
-        const customers = await stripe.customers.list();
-
-        customers.data.forEach(customer =>{
-            const customerData = {
-                name: customer.name,
-                email:customer.email, 
-                stripe_customer_id: customer.id,
-                subscription_id: customer.subscriptions && customer.subscriptions.data && customer.subscriptions.data.length > 0 ? customer.subscriptions.data[0].id : 0
+  async function retrieveAllCustomersAndSubscriptions() {
+        try {
+            const customers = await stripe.customers.list({}); 
+            const customerData = [];
+            for (const customer of customers.data) {
+                // Initialize the active_abonnement variable
+                let active_abonnement = 0; // Default to 0
+                // Retrieve subscriptions for the customer
+                const subscriptions = await stripe.subscriptions.list({ customer: customer.id });
+                
+                // If the customer has subscriptions, update active_abonnement and store them
+                if (subscriptions.data.length > 0) {
+                    for (const subscription of subscriptions.data) {
+                        active_abonnement = 1; // Set to 1 if there's at least one subscription
+                        customerData.push({
+                            name: customer.name,
+                            email: customer.email,
+                            customer_id: customer.id,
+                            subscription_id: subscription.id,
+                            active_abonnement: active_abonnement
+                        });
+                    }
+                } else {
+                    // Customer has no subscriptions, still store their information
+                    customerData.push({
+                        name: customer.name,
+                        email: customer.email,
+                        customer_id: customer.id,
+                        subscription_id: null, // No subscription
+                        active_abonnement: active_abonnement // Remains 0
+                    });
+                }
             }
-            const query = `INSERT INTO customers (name, email, stripe_customer_id,subscription_id) VALUES (?,?,?,?)`;
-            db.execute(query, [customerData.name, customerData.email, customerData.stripe_customer_id,customerData.subscription_id], (error, results) => {
-            if (error) {
-                console.error('Error inserting customer data into MySQL:', error);
-            } else {
-                console.log(`Inserted customer with ID: ${results.insertId}`);
-            }
-            });
-        });
+            return customerData;
+        } catch (error) {
+            console.error('Error retrieving customers and subscriptions:', error);
+            throw error;
+        }
     }
-    storeData();
+  async function storeDataInDatabase(customerData) {
+    try {
+            const sql = "INSERT INTO customers (name, email, stripe_customer_id, subscription_id,active_abonnement) VALUES ?";
+            const values = customerData.map((data) => [data.name, data.email, data.customer_id, data.subscription_id,data.active_abonnement]);
+            db.promise().query(sql, [values])
+                .then(result => {
+                    console.log('Customers added:', result);
+                })
+                .catch(err => {
+                    console.error('Error inserting customers:', err);
+                });
+
+  
+      console.log('Data stored successfully.');
+    } catch (error) {
+      console.error('Error storing data in database:', error);
+      throw error;
+    }
+  }
+
+  async function main() {
+    try {
+      const customerData = await retrieveAllCustomersAndSubscriptions();
+      await storeDataInDatabase(customerData);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+    }
+  }
+  
+//   main();
+
 
 // Create subscription
 async function createSubscription(req, res)  {
-        const customerId = 'cus_QjRNsDIdSlWInF';
+        const customerId = 'cus_QjSOCTNu8UCPl3';
         const priceId = 'price_1PsJyoIC80XBakK1g6wkOWQa';
 
       try {
@@ -140,8 +188,7 @@ async function listSubscriptions(){
 
     // listSubscriptions();
 
-
-
+    
 // Cancel Subscription Route
 async function cancelSubscription (req, res){ 
    
