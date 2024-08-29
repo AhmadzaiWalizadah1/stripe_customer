@@ -51,12 +51,12 @@ var listCustomers  = function(err, customers){
             console.log(err)
         }
         else {
-           var persons = console.log(JSON.stringify(customers,null,2)); 
+           var persons = console.log(JSON.stringify(customers,null,2));
 
-        }           
+        }
     });
 }
-// Function call 
+// Function call
 //   listCustomers();
 
 // Create a customer in stripe
@@ -71,24 +71,24 @@ var createCustomer = function(){
             console.log(err)
         else if(customer)
             console.log('Customer created successfully.');
-        else 
+        else
         console.log('something went wrong...');
     });
 }
-    // Function call 
+    // Function call
     // createCustomer();
 
 
   async function retrieveAllCustomersAndSubscriptions() {
         try {
-            const customers = await stripe.customers.list({}); 
+            const customers = await stripe.customers.list({});
             const customerData = [];
             for (const customer of customers.data) {
                 // Initialize the active_abonnement variable
                 let active_abonnement = 0; // Default to 0
                 // Retrieve subscriptions for the customer
                 const subscriptions = await stripe.subscriptions.list({ customer: customer.id });
-                
+
                 // If the customer has subscriptions, update active_abonnement and store them
                 if (subscriptions.data.length > 0) {
                     for (const subscription of subscriptions.data) {
@@ -130,7 +130,7 @@ var createCustomer = function(){
                     console.error('Error inserting customers:', err);
                 });
 
-  
+
       console.log('Data stored successfully.');
     } catch (error) {
       console.error('Error storing data in database:', error);
@@ -147,9 +147,8 @@ var createCustomer = function(){
     } finally {
     }
   }
-  
-//   main();
 
+//   main();
 
 // Create subscription
 async function createSubscription(req, res)  {
@@ -166,7 +165,7 @@ async function createSubscription(req, res)  {
             ],
           });
         // Update MySQL customer record
-        db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?', 
+        db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?',
             [subscription.id, customerId],
             (error) => {
                 if (error) throw error;
@@ -176,11 +175,11 @@ async function createSubscription(req, res)  {
         console.log(error);
     }
 };
-// function call 
+// function call
 //  createSubscription();
 
 
-// Get all Subscriptions 
+// Get all Subscriptions
 async function listSubscriptions(){
         const subscriptions = await stripe.subscriptions.list({});
         console.log(subscriptions);
@@ -188,15 +187,15 @@ async function listSubscriptions(){
 
     // listSubscriptions();
 
-    
+
 // Cancel Subscription Route
-async function cancelSubscription (req, res){ 
-   
+async function cancelSubscription (req, res){
+
     const customerId = 'cus_QjRNsDIdSlWInF' ;
-    
+
     try {
         // Retrieve the customer record from MySQL
-        db.query('SELECT subscription_id FROM customers WHERE stripe_customer_id = ?', 
+        db.query('SELECT subscription_id FROM customers WHERE stripe_customer_id = ?',
             [customerId],
             async (error, results) => {
                 if (error) throw error;
@@ -207,7 +206,7 @@ async function cancelSubscription (req, res){
                 // Cancel the subscription in Stripe
                 await stripe.subscriptions.cancel(subscriptionId);
                 // Update MySQL customer record
-                db.query('UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE stripe_customer_id = ?', 
+                db.query('UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE stripe_customer_id = ?',
                     [customerId],
                     (error) => {
                         if (error) throw error;
@@ -220,7 +219,7 @@ async function cancelSubscription (req, res){
         res.status(500).json({ error: error.message });
     }
 }
-        // function call 
+        // function call
         // cancelSubscription();
 
 
