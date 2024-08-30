@@ -1,8 +1,8 @@
-<div class="col-md-10 p-5">
+<div class="">
 
 {{!-- List All users --}}
-<section class="container m-auto" id="list-users">
-        <h4 class="text-center p-2">All Users</h4>
+<section class="section section-listCustomers m-auto p-3" id="list-users">
+        <h3 class="text-center">All Users</h3>
 <table class="table p-2 shadow-sm">
         <thead>
         <tr>
@@ -13,11 +13,10 @@
         </thead>
         <tbody>
                 {{#each customers}}
-                <tr>
+                <tr >
                         <td>{{this.name}}</td>
                         <td>{{this.email}}</td>
                         <td>{{this.description}}</td>
-
                 </tr>
                 {{else }}
                 <tr>
@@ -27,4 +26,55 @@
         </tbody>
 </table>
  </section>
+</div>
+
+{{!-- Create a Customer --}}
+<div class="section section-createCustomer m-auto p-3" id="create-customer">
+                <div class="card shadow-sm">
+                   <div class="card-header border-0" style="background-color: #ebe6e9;">
+                       <h3 class="text-center">Create a Customer</h3>
+                  </div>
+                <div class="card-body">
+                        {{!-- Form --}}
+                       <div class="col-md-6 m-auto">
+                        <form class="form" method="POST" action="/create-customer">
+                                <div class="mb-3">
+                                        <label for="name" class="form-label text-start shadow-md">Name</label>
+                                        <input type="text" class="form-control shadow-md" id="name" placeholder="Megan Boon" required name="name">
+                                </div>
+                                <div class="mb-3">
+                                        <label for="email" class="form-label">Email address</label>
+                                        <input type="email" class="form-control" id="email" placeholder="Boon.Megan@gmail.com" required name="email">
+                                </div>
+                                <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="description" rows="3" name="description"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                                        <button type="submit" class="btn btn-outline-danger btn-md" value="Create">Create</button>
+                                </div>
+                         </form>
+
+                                {{!-- Message --}}
+                               {{#if success}}
+                                    <p class="success-message">{{message}}</p>
+                                {{else}}
+                                    <p class="error-message">{{message}}</p>
+                                {{/if}}
+
+
+                       </div>
+                       {{!-- End Form --}}
+                </div>
+                </div>
+
+                        {{#if redirect}}
+                           <script>
+                                window.location.href = "/";
+                           </script>
+                        {{/if}}
+
+
 </div>

@@ -1,6 +1,5 @@
 // require necessary packages
 const express = require('express');
-const bodyParser = require('body-parser');
 const mysql2 = require('mysql2');
 const Stripe = require('stripe');
 const stripe = Stripe('sk_test_51PqbrQIC80XBakK1ZBJIWKcchvauBdTDppLeEyUVeg40WQsSLecVtjNUtN18w9gExUeboe7sAmkSOinCZmGJyMJT00vE9tb4RG');
@@ -9,14 +8,27 @@ const path = require('path');
 const fs = require('fs');
 const handlebars = require('express-handlebars');
 const hbs = require('hbs');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const csurf = require('csurf');
 const PORT =  3000;
 
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser()); 
+app.use(csurf({ cookie: true })); 
+// Middleware to expose the CSRF token to views
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
 // Handlebars setup
 app.set('view engine','handlebars');
 app.engine('handlebars',handlebars.engine({
     layoutDir: __dirname + '/views/layouts',
     partialsDir: __dirname + '/views/partials/'
 }));
+
 app.use(express.static('public'));
 app.set('pages','./views/pages');
 
@@ -42,59 +54,6 @@ db.connect(err => {
     console.log('MySQL Connected...');
 });
 
-
-// Retrieve all customers from stripe and display it to the console.
-var listCustomers  = function(err, customers){
-    stripe.customers.list(function(err,customers){
-        if(err){
-            console.log(err)
-        }
-        else {
-        //    var persons = console.log(JSON.stringify(customers,null,2));
-              var persons = JSON.stringify(customers);
-              return persons.data;
-
-        }
-    });
-}
-// Function call
-//   listCustomers();
-
-
-// Create a customer in stripe
-async function createUser(name, email,description) {
-    try {
-        // Step 1: Check if the customer already exists in Stripe
-        const customers = await stripe.customers.list({
-            email: email,
-            limit: 1 // We only need to check for one existing customer
-        });
-        if (customers.data.length > 0) {
-            // Customer exists
-            return { success: false, message: 'User already exists' };
-        }
-        // Step 2: Create a new customer if not found
-        const newCustomer = await stripe.customers.create({
-            name: name,
-            email: email,
-            description: description
-        });
-        return { success: true, customer: newCustomer, message: 'User created successfully' };
-    } catch (error) {
-        console.error('Error creating user in Stripe:', error);
-        throw error; // You might want to return some error message or structure
-    }
-}
-
-// Usage example
-async function useCase() {
-    const name = 'Megan Boon';
-    const email = 'Boon.Megan@gmail.com';
-    const description = "Blacklist series actress.";
-    const result = await createUser(name, email,description);
-    console.log(result); // Display the result to the user/client
-}
-//  useCase();
 
 
   async function retrieveAllCustomersAndSubscriptions() {
@@ -268,8 +227,9 @@ async function cancelSubscription (req, res){
         // function call
         // cancelSubscription();
 
+        //  ROUTES ARE DEFINED HERE... 
 
-//Routes 
+ // all users
 app.get('/', async (req, res) => {
     try {
         // Fetch customers from Stripe
@@ -282,6 +242,71 @@ app.get('/', async (req, res) => {
         res.status(500).send('Error retrieving customers'); // Send an error response
     }
 });
+
+
+
+// Create a customer
+async function createUser(name, email,description) {
+    try {
+        // Step 1: Check if the customer already exists in Stripe
+        const customers = await stripe.customers.list({
+            email: email,
+            limit: 1 // We only need to check for one existing customer
+        });
+        if (customers.data.length > 0) {
+            // Customer exists
+            return { success: false, message: 'User already exists' };
+        }
+        // Step 2: Create a new customer if not found
+        const newCustomer = await stripe.customers.create({
+            name: name,
+            email: email,
+            description: description
+        });
+        return { success: true, customer: newCustomer, message: 'User created successfully :(' };
+    } catch (error) {
+        console.error('Error creating user in Stripe:', error);
+        throw error; // You might want to return some error message or structure
+    }
+}
+
+// create-user route 
+app.post('/create-customer', async (req, res) => {
+    const { name, email, description } = req.body;
+    try {
+       const result = await createUser(name, email, description);
+       const redirect = true;
+     // If customer creation is successful
+       res.render('main', { 
+        layout: 'index', 
+        success: result.success, 
+        message: result.message,
+        redirect
+    });
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      // Send an appropriate error message to the user
+      const redirect = true;
+      res.render('main', { layout: 'index', success: false, message: 'Error creating customer. Please try again later.',redirect });
+    }
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Start server
