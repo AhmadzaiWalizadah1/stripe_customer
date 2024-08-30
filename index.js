@@ -19,9 +19,6 @@ app.engine('handlebars',handlebars.engine({
 }));
 app.use(express.static('public'));
 app.set('pages','./views/pages');
-app.get('/',(req,res)=>{
-    res.render('main',{layout: 'index'});
-});
 
 // Boootstrap Integration
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
@@ -44,6 +41,8 @@ db.connect(err => {
     }
     console.log('MySQL Connected...');
 });
+
+
 // Retrieve all customers from stripe and display it to the console.
 var listCustomers  = function(err, customers){
     stripe.customers.list(function(err,customers){
@@ -51,7 +50,9 @@ var listCustomers  = function(err, customers){
             console.log(err)
         }
         else {
-           var persons = console.log(JSON.stringify(customers,null,2));
+        //    var persons = console.log(JSON.stringify(customers,null,2));
+              var persons = JSON.stringify(customers);
+              return persons.data;
 
         }
     });
@@ -268,9 +269,20 @@ async function cancelSubscription (req, res){
         // cancelSubscription();
 
 
-app.get('/', (req, res) => {
-    res.render('home');
+//Routes 
+app.get('/', async (req, res) => {
+    try {
+        // Fetch customers from Stripe
+        const customers = await stripe.customers.list();
+        
+        // Render the view and pass the customers data
+        res.render('main', { layout: 'index', customers: customers.data });
+    } catch (err) {
+        console.error('Error fetching customers:', err);
+        res.status(500).send('Error retrieving customers'); // Send an error response
+    }
 });
+
 
 // Start server
 app.listen(PORT, () => {

@@ -1,6 +1,30 @@
-<div class="col-md-10">
-        
-        <h3 class="text-center">main contents</h3>
+<div class="col-md-10 p-5">
 
-        <a href="" class="btn btn-outline-danger">wow</a>
+{{!-- List All users --}}
+<section class="container m-auto" id="list-users">
+        <h4 class="text-center p-2">All Users</h4>
+<table class="table p-2 shadow-sm">
+        <thead>
+        <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Description</th>
+        </tr>
+        </thead>
+        <tbody>
+                {{#each customers}}
+                <tr>
+                        <td>{{this.name}}</td>
+                        <td>{{this.email}}</td>
+                        <td>{{this.description}}</td>
+
+                </tr>
+                {{else }}
+                <tr>
+                        <td class="colspan-2">No Customer found.</td>
+                </tr>
+                {{/each}}
+        </tbody>
+</table>
+ </section>
 </div>
