@@ -1,43 +1,52 @@
-// require necessary packages
-const express = require('express');
 const mysql2 = require('mysql2');
 const Stripe = require('stripe');
 const stripe = Stripe('sk_test_51PqbrQIC80XBakK1ZBJIWKcchvauBdTDppLeEyUVeg40WQsSLecVtjNUtN18w9gExUeboe7sAmkSOinCZmGJyMJT00vE9tb4RG');
-const app = express();
 const path = require('path');
-const fs = require('fs');
 const handlebars = require('express-handlebars');
-const hbs = require('hbs');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const csurf = require('csurf');
 const PORT =  3000;
 
+// CSRF Protection
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const csurf = require('csurf');
+const bodyParser = require('body-parser');
+const session = require('express-session'); 
+const app = express();
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser()); 
-app.use(csurf({ cookie: true })); 
-// Middleware to expose the CSRF token to views
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+const csrfProtection = csurf({ cookie: true });
+app.use(csrfProtection);
+
+// Get the CSRF token only once in a middleware
+// app.use((req, res, next) => {
+//     res.locals.csrfToken = req.csrfToken(); 
+//     console.log("Generated CSRF Token:", res.locals.csrfToken); 
+//     next();
+// });
+
 app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken();
+    // Check if the token is already in locals to avoid multiple generations
+    if (!res.locals.csrfToken) {
+        res.locals.csrfToken = req.csrfToken();
+        console.log("Generated CSRF Token:", res.locals.csrfToken);
+    }
     next();
 });
+
 // Handlebars setup
 app.set('view engine','handlebars');
 app.engine('handlebars',handlebars.engine({
     layoutDir: __dirname + '/views/layouts',
     partialsDir: __dirname + '/views/partials/'
 }));
-
-app.use(express.static('public'));
 app.set('pages','./views/pages');
 
 // Boootstrap Integration
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
 app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
 
-// Middleware
-app.use(bodyParser.json());
 
 // DB Configuration
 const dbConfig = {
@@ -53,8 +62,6 @@ db.connect(err => {
     }
     console.log('MySQL Connected...');
 });
-
-
 
   async function retrieveAllCustomersAndSubscriptions() {
         try {
@@ -128,68 +135,6 @@ db.connect(err => {
 //   main();
 
 
-// Create subscription
-async function createSubscription(req, res) {
-    const customerId = 'cus_QjSOCTNu8UCPl3'; // The customer ID can be retrieved from req.body or req.params
-    const priceId = 'price_1PsJyoIC80XBakK1g6wkOWQa'; // The price ID can also be passed in as a parameter
-    try {
-        // Step 1: Check if the customer already has an active subscription with this price ID
-        const existingSubscriptions = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'active', // Check for active subscriptions only
-            expand: ['data.items']
-        });
-        const hasActiveSubscription = existingSubscriptions.data.some(subscription =>
-            subscription.items.data.some(item => item.price.id === priceId)
-        );
-        if (hasActiveSubscription) {
-            console.log('Customer has already a Subscription of this Type.');
-            return {success: false, message: 'Customer has already a Subscription of this Type.'}
-        }
-        // Step 2: Create the subscription since no active subscription exists
-        const subscription = await stripe.subscriptions.create({
-            customer: customerId,
-            items: [
-                {
-                    price: priceId,
-                },
-            ],
-        });
-        // Update MySQL customer record
-        db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?',
-            [subscription.id, customerId],
-            (error) => {
-                if (error) 
-                    console.log('error updating customer ',error);
-            }
-        );
-        // Respond with the subscription details
-        console.log("Thanks for subscribing. We are glad to have you....");
-        return {success: true,subscription:subscription, message: "Thanks for subscribing. We are glad to have you...."}
-    } catch (error) {
-        console.error('Error creating subscription:', error);
-        let message = 'Internal server error';
-        if (error.type === 'StripeError') {
-            message = error.message;
-        }
-        return {success:false, message: 'internal error.'}
-    }
-}
-// function call
-//  createSubscription(); 
-
-
-
-
-// Get all Subscriptions
-async function listSubscriptions(){
-        const subscriptions = await stripe.subscriptions.list({});
-        console.log(subscriptions);
- }
-
-    // listSubscriptions();
-
-
 // Cancel Subscription Route
 async function cancelSubscription (req, res){
 
@@ -227,26 +172,20 @@ async function cancelSubscription (req, res){
         // function call
         // cancelSubscription();
 
-        //  ROUTES ARE DEFINED HERE... 
-
- // all users
-app.get('/', async (req, res) => {
+ 
+// Get all Customers Function
+async function getAllCustomers() {
     try {
-        // Fetch customers from Stripe
         const customers = await stripe.customers.list();
-        
-        // Render the view and pass the customers data
-        res.render('main', { layout: 'index', customers: customers.data });
+        return customers.data; // Simplified return
     } catch (err) {
         console.error('Error fetching customers:', err);
-        res.status(500).send('Error retrieving customers'); // Send an error response
+        throw err; // Re-throw the error for handling in the main route
     }
-});
+}
 
-
-
-// Create a customer
-async function createUser(name, email,description) {
+//Create-customer Function
+async function createCustomer(name, email,description) {
     try {
         // Step 1: Check if the customer already exists in Stripe
         const customers = await stripe.customers.list({
@@ -263,18 +202,18 @@ async function createUser(name, email,description) {
             email: email,
             description: description
         });
-        return { success: true, customer: newCustomer, message: 'User created successfully :(' };
+        return { success: true, customer: newCustomer, message: 'User created successfully :)' };
     } catch (error) {
         console.error('Error creating user in Stripe:', error);
         throw error; // You might want to return some error message or structure
     }
 }
 
-// create-user route 
-app.post('/create-customer', async (req, res) => {
+// Route for creating a Customer
+app.post('/create-customer',csrfProtection, async (req, res) => {
     const { name, email, description } = req.body;
     try {
-       const result = await createUser(name, email, description);
+       const result = await createCustomer(name, email, description);
        const redirect = true;
      // If customer creation is successful
        res.render('main', { 
@@ -291,24 +230,181 @@ app.post('/create-customer', async (req, res) => {
     }
   });
 
+// Route to handle delete (POST)
+app.post('/delete-customer', async (req, res) => {
+    const customerId = req.body.customerId;
+    const redirect = true;
+    try {
+        await stripe.customers.del(customerId);
+        res.render('main', {
+            layout: 'index',
+            message: 'Customer deleted successfully.',
+            redirect
+        });
+    } catch (error) {
+        console.error('Error deleting customer:', error);
+        res.status(500).render('main', {
+            layout: 'index',
+            message: 'Error deleting customer.',
+            redirect
+        });
+    }
+});
 
+// Get all Subscriptions Function
+async function getAllSubscriptions() {
+    try {
+        // Get all subscriptions from Stripe
+        const subscriptions = await stripe.subscriptions.list({});
+        const subscriptionData = await Promise.all(subscriptions.data.map(async (subscription) => {
+            // Fetch customer details using the customer ID
+            const customer = await stripe.customers.retrieve(subscription.customer);
+            // Extract product information (assuming single items)
+            const productId = subscription.items.data[0].price.product;
+            const product = await stripe.products.retrieve(productId);
+            return {
+                sub_id: subscription.id,
+                email: customer.email,
+                status: subscription.status,
+                customerName: customer.name || 'N/A',
+                customerDescription: customer.description || 'N/A',
+                billing: subscription.collection_method || null,
+                product: product.name,
+                createdAt: new Date(subscription.created * 1000).toLocaleString(), 
+    
 
+            };
+        }));
+        return subscriptionData; // Simplified return
+    } catch (error) {
+        console.error('Error fetching Subscriptions:', error);
+        throw error; // Re-throw the error for handling in the main route
+    }
+}
 
+// Route to render subscription form
+async function getProducts()  {
+    try {
+        const products = await stripe.products.list();
+        return products.data;
+    } catch (error) {
+        console.error('Error fetching customers or products:', error);
 
+    }
+}
+// Route to create a subscription 
+app.post('/create-subscription',csrfProtection, async (req, res) => {
+        const { customerId, priceId } = req.body;
+        const redirect = true;
+      
+        try {
+            const existingSubscriptions = await stripe.subscriptions.list({
+                customer: customerId,
+                status: 'active',
+                expand: ['data.items']
+            });
+            const hasActiveSubscription = existingSubscriptions.data.some(subscription =>
+                subscription.items.data.some(item => item.price.id === priceId)
+            );
+            if (hasActiveSubscription) {
+                console.log('Customer has already a Subscription of this Type.');
+                res.render('main', { 
+                    layout: 'index', 
+                    message: 'Customer has already a subscription of this type.',
+                    redirect
+                });
+                return {success: false, message: 'Customer has already a Subscription of this Type.'}
+            
+            }
 
+            // Step 2: Create the subscription since no active subscription exists
+            const subscription = await stripe.subscriptions.create({ customer: customerId,
+                items: [
+                    {
+                        price: priceId,
+                    },
+                ],
+            });
+            // Update MySQL customer record
+            db.query('UPDATE customers SET subscription_id = ?, active_abonnement = TRUE WHERE stripe_customer_id = ?',
+                [subscription.id, customerId],
+                (error) => {
+                    if (error) 
+                        console.log('error updating customer ',error);
+                }
+            );
+            // Respond with the subscription details
+            console.log("Thanks for subscribing. We are glad to have you....");
+            res.render('main', { 
+                layout: 'index', 
+                message: 'Thanks for subscribing...',
+                csrfToken: req.csrfToken(), 
+                redirect
+            });
+            return {success: true,subscription:subscription, message: "Thanks for subscribing. We are glad to have you...."}
+        } catch (error) {
+            console.error('Error creating subscription:', error);
+            let message = 'Internal server error';
+            if (error.type === 'StripeError') {
+                message = error.message;
+            }
+            return {success:false, message: 'internal error.'}
+}
+});
 
+// Cancel a subscription
+app.post('/cancel-subscription', csrfProtection, async (req, res) => {
+    const { subscription } = req.body;  
+    const redirect = true;
+    try {
+        // Cancel the subscription using Stripe API
+        const cancellation = await stripe.subscriptions.cancel(subscription);
 
+        if (cancellation.status === 'canceled') {
+            // Update the database only if the subscription is successfully canceled
+            await db.promise().query(
+                'UPDATE customers SET subscription_id = NULL, active_abonnement = FALSE WHERE subscription_id = ?',
+                [subscription]
+            );
+            console.log('Subscription canceled.');
 
+            res.render('main', {
+                layout: 'index',
+                message: 'Subscription canceled successfully!', 
+                redirect
+            });
+        } else {
+            throw new Error('Failed to cancel subscription on Stripe');
+        }
+    } catch (error) {
+        console.error('Error canceling subscription:', error);
 
+        res.render('main', {
+            layout: 'index',
+            message: 'Failed to cancel subscription. Please try again.',
+            redirect
+        });
+    }
+});
 
-
-
-
-
-
-
-
-
+// Route to handle getting Customers,Subscriptions and Products
+app.get('/', csrfProtection, async (req, res) => {
+    try {
+        const customers = await getAllCustomers();
+        const subscriptions = await getAllSubscriptions();
+        const products = await getProducts();
+        res.render('main', {
+            layout: 'index', 
+            customers, 
+            subscriptions,
+            products,
+            csrfToken: req.csrfToken() 
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).send('Error retrieving data');
+    }
+});
 // Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

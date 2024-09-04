@@ -1,9 +1,10 @@
 <div class="">
-
+<!-- If you prefer to use a meta tag -->
+<meta name="csrf-token" content="{{csrfToken}}">
 {{!-- List All users --}}
-<section class="section section-listCustomers m-auto p-3" id="list-users">
+<section class="section section-listCustomers m-auto p-3" id="list-customers" >
         <h3 class="text-center">All Users</h3>
-<table class="table p-2 shadow-sm">
+<table class="table p-2 shadow-md" data-aos="zoom-in-down">
         <thead>
         <tr>
                 <th scope="col">Name</th>
@@ -13,23 +14,23 @@
         </thead>
         <tbody>
                 {{#each customers}}
-                <tr >
+                <tr>
                         <td>{{this.name}}</td>
                         <td>{{this.email}}</td>
-                        <td>{{this.description}}</td>
+                        <td>{{this.description}}</td>            
                 </tr>
                 {{else }}
                 <tr>
-                        <td class="colspan-2">No Customer found.</td>
+                        <td class="colspan-4">No Customer found.</td>
                 </tr>
                 {{/each}}
         </tbody>
 </table>
  </section>
 </div>
-
 {{!-- Create a Customer --}}
-<div class="section section-createCustomer m-auto p-3" id="create-customer">
+<div class="section section-createCustomer m-auto p-3" id="create-customer" data-aos="zoom-in-left">
+
                 <div class="card shadow-sm">
                    <div class="card-header border-0" style="background-color: #ebe6e9;">
                        <h3 class="text-center">Create a Customer</h3>
@@ -75,6 +76,168 @@
                                 window.location.href = "/";
                            </script>
                         {{/if}}
+</div>
 
+{{!-- List all Subscriptions --}}
+<div class="section section-createCustomer m-auto p-3" id="list-subscriptions" data-aos="zoom-in-right">
+        <div class="card shadow-sm">
+          <div class="card-header border-0" style="background-color: #ebe6e9;">
+                  <h3 class="text-center">All active Subscriptions</h3>
+         </div>
+         <div class="card-body">
+                  <table class="table p-2 shadow-md">
+                        <thead>
+                        <tr>
+                                <th scope="col">Customer</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Customer Name</th>
+                                <th scope="col">Customer Description</th>
+                                <th scope="col">Billing</th>
+                                <th scope="col">Product</th>
+                                <th scope="col">Created at</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {{#each subscriptions}}
+                                <tr>
+                                        <td>{{this.email}}</td>
+                                        <td>{{this.status}}</td>
+                                        <td>{{this.customerName}}</td>
+                                        <td>{{this.customerDescription}}</td>
+                                        <td>{{this.billing}}</td>
+                                        <td>{{this.product}}</td>
+                                        <td>{{this.createdAt}}</td>
+                                       {{!-- Message --}}
+                                        {{#if message}}
+                                                <div class="alert">{{message}}</div>
+                                        {{/if}}
+                                </tr>
+                        {{/each}}
+                        </tbody>
+        </table>             
+        </div>
+</div>
+</div>
+
+
+<div class="row">
+{{!-- Create a Subscription --}}
+<div class=" col-md-4 p-3" id="create-subscription" data-aos="flip-right">
+                      
+                       <div class="bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
+                        <h3 class="text-center">Create a Subscription</h3>
+                    
+                                <form  class="form" method="POST" action="/create-subscription">
+                                  <div class="mb-3">
+                                       <label for="customerId" class="form-label">Select Customer:</label>
+                                        <select name="customerId" id="customerId" required>
+                                           {{#each customers}}
+                                             <option value="{{this.id}}">{{this.name}}</option>
+                                          {{/each}}
+                                        </select>
+                                   </div>
+
+                                <div class="mb-3">
+                                        <label for="priceId" class="form-lebel">Select Product:</label>
+                                         <select name="priceId" id="priceId" required>
+                                                {{#each products}}
+                                                 <option value="{{this.default_price}}">{{this.name}}</option>
+                                              {{/each}}
+                                         </select>
+                                     </div>      
+                                        <div class="mb-3">    
+                                                <input type="hidden" name="_csrf" value="{{csrfToken}}"> <br>
+                                                <button type="submit" class="btn btn-outline-danger">Create Subscription</button>
+                                        </div>  
+                                        </form>
+
+                                         {{!-- Message --}}
+                                        {{#if message}}
+                                          <p>{{message}}</p>
+                                        {{/if}}
+
+                                </div>
+                      
+                        {{#if redirect}}
+                           <script>
+                                window.location.href = "/";
+                           </script>
+                        {{/if}}
+</div>
+
+{{!-- Cancel a subscription --}}
+<div class="p-3 col-md-4" id="cancel-subscription" data-aos="flip-right">
+
+                        {{!-- Form --}}
+                       <div class=" bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
+                        <h3 class="text-center">Cancel A Subscription</h3>
+                    
+                               <form  class="form" method="POST" action="/cancel-subscription">
+                                                <div class="mb-3">
+                                                <label for="subscriptionId" class="form-label">Select a Subscription:</label>
+                                                <select name="subscription" id="subscriptionId" required>
+                                                {{#each subscriptions}}    
+                                                        <option value="{{this.sub_id}}">{{this.product}}</option>
+                                                {{/each}}
+                                                </select>
+                                                </div>
+                                                <div class="mb-3">    
+                                                <input type="hidden" name="_csrf" value="{{csrfToken}}"> <br>
+                                                <button type="submit" class="btn btn-outline-danger">Cancel Subscription</button>
+                                                </div>  
+                                                </form>
+
+                                         {{!-- Message --}}
+                                        {{#if message}}
+                                          <p>{{message}}</p>
+                                        {{/if}}
+
+                                </div>
+                      
+                        {{#if redirect}}
+                           <script>
+                                window.location.href = "/";
+                           </script>
+                        {{/if}}
+</div>
+
+{{!-- Delete a Customer --}}
+<div class="col-md-4 p-3 " id="delete-customer" data-aos="flip-right">
+
+                        {{!-- Form --}}
+                       <div class="bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
+                        <h3 class="text-center">Delete a Customer</h3>
+                    
+                                <form  class="form" method="POST" action="/delete-customer">
+                                  <div class="mb-3">
+                                       <label for="customerId" class="form-label">Select A Customer:</label>
+                                        <select name="customerId" id="customerId" required>
+                                           {{#each customers}}
+                                             <option value="{{this.id}}">{{this.name}}</option>
+                                          {{/each}}
+                                        </select>
+                                   </div>
+
+                                        <div class="mb-3">    
+                                                <input type="hidden" name="_csrf" value="{{csrfToken}}"> <br>
+                                                <button type="submit" class="btn btn-outline-danger">Create Subscription</button>
+                                        </div>  
+                                        </form>
+
+                                         {{!-- Message --}}
+                                        {{#if message}}
+                                          <p>{{message}}</p>
+                                        {{/if}}
+
+                                </div>
+                      
+                        {{#if redirect}}
+                           <script>
+                                window.location.href = "/";
+                           </script>
+                        {{/if}}
+</div>
 
 </div>
+
