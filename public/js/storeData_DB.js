@@ -73,5 +73,13 @@ async function storeDataInDatabase(customerData) {
         }
   }
 }
+async function main() {
+  try {
+    const customerData = await retrieveAllCustomersAndSubscriptions();
+    await storeDataInDatabase(customerData);
+  } catch (error) {
+    console.error('Error in main function:', error);
+  }
+}
 
-module.exports = { retrieveAllCustomersAndSubscriptions, storeDataInDatabase }; 
+module.exports = { retrieveAllCustomersAndSubscriptions, storeDataInDatabase, main }; 
