@@ -19,10 +19,10 @@ app.use(bodyParser.json());
 const csrfProtection = csurf({ cookie: true });
 app.use(csrfProtection);
 
-// Get the CSRF token only once in a middleware
-// app.use((req, res, next) => {
-//     res.locals.csrfToken = req.csrfToken(); 
-//     console.log("Generated CSRF Token:", res.locals.csrfToken); 
+//Get the CSRF token only once in a middleware
+//app.use((req, res, next) => {
+//res.locals.csrfToken = req.csrfToken(); 
+//console.log("Generated CSRF Token:", res.locals.csrfToken); 
 //     next();
 // });
 
@@ -133,7 +133,6 @@ db.connect(err => {
   }
 
 //   main();
-
 
 // Cancel Subscription Route
 async function cancelSubscription (req, res){
@@ -389,6 +388,7 @@ app.post('/cancel-subscription', csrfProtection, async (req, res) => {
 
 // Route to handle getting Customers,Subscriptions and Products
 app.get('/', csrfProtection, async (req, res) => {
+
     try {
         const customers = await getAllCustomers();
         const subscriptions = await getAllSubscriptions();

@@ -1,7 +1,5 @@
 <div class="">
-<!-- If you prefer to use a meta tag -->
-<meta name="csrf-token" content="{{csrfToken}}">
-{{!-- List All users --}}
+{{!-- List All Customers --}}
 <section class="section section-listCustomers m-auto p-3" id="list-customers" >
         <h3 class="text-center">All Users</h3>
 <table class="table p-2 shadow-md" data-aos="zoom-in-down">
@@ -10,6 +8,7 @@
                 <th scope="col">Name</th>
                 <th scope="col">Email</th>
                 <th scope="col">Description</th>
+                <th>Delete customer</th>
         </tr>
         </thead>
         <tbody>
@@ -17,7 +16,14 @@
                 <tr>
                         <td>{{this.name}}</td>
                         <td>{{this.email}}</td>
-                        <td>{{this.description}}</td>            
+                        <td>{{this.description}}</td>  
+                        <td>
+                                <form  class="form" method="POST" action="/delete-customer">
+                                           <input type="hidden" name="_csrf" value="{{csrfToken}}"/>
+                                             <input type="hidden" value="{{this.id}}"/>
+                                          <button type="submit" class="btn btn-outline-danger del-btn" id="delete-{{this.id}}">delete</button>
+                                </form>
+                        </td>          
                 </tr>
                 {{else }}
                 <tr>
@@ -29,9 +35,10 @@
  </section>
 </div>
 {{!-- Create a Customer --}}
-<div class="section section-createCustomer m-auto p-3" id="create-customer" data-aos="zoom-in-left">
+<div class="row">
+<div class="col-md-6 p-3" id="create-customer" data-aos="zoom-in-left">
 
-                <div class="card shadow-sm">
+                <div class="card shadow-sm" style="height: 30rem;">
                    <div class="card-header border-0" style="background-color: #ebe6e9;">
                        <h3 class="text-center">Create a Customer</h3>
                   </div>
@@ -60,9 +67,9 @@
 
                                 {{!-- Message --}}
                                {{#if success}}
-                                    <p class="success-message">{{message}}</p>
+                                    <p class="success-message text-green" >{{message}}</p>
                                 {{else}}
-                                    <p class="error-message">{{message}}</p>
+                                    <p class="error-message text-red">{{message}}</p>
                                 {{/if}}
 
 
@@ -77,57 +84,15 @@
                            </script>
                         {{/if}}
 </div>
-
-{{!-- List all Subscriptions --}}
-<div class="section section-createCustomer m-auto p-3" id="list-subscriptions" data-aos="zoom-in-right">
-        <div class="card shadow-sm">
-          <div class="card-header border-0" style="background-color: #ebe6e9;">
-                  <h3 class="text-center">All active Subscriptions</h3>
-         </div>
-         <div class="card-body">
-                  <table class="table p-2 shadow-md">
-                        <thead>
-                        <tr>
-                                <th scope="col">Customer</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Customer Name</th>
-                                <th scope="col">Customer Description</th>
-                                <th scope="col">Billing</th>
-                                <th scope="col">Product</th>
-                                <th scope="col">Created at</th>
-                        </tr>
-                        </thead>
-
-                        <tbody>
-                        {{#each subscriptions}}
-                                <tr>
-                                        <td>{{this.email}}</td>
-                                        <td>{{this.status}}</td>
-                                        <td>{{this.customerName}}</td>
-                                        <td>{{this.customerDescription}}</td>
-                                        <td>{{this.billing}}</td>
-                                        <td>{{this.product}}</td>
-                                        <td>{{this.createdAt}}</td>
-                                       {{!-- Message --}}
-                                        {{#if message}}
-                                                <div class="alert">{{message}}</div>
-                                        {{/if}}
-                                </tr>
-                        {{/each}}
-                        </tbody>
-        </table>             
-        </div>
-</div>
-</div>
-
-
-<div class="row">
 {{!-- Create a Subscription --}}
-<div class=" col-md-4 p-3" id="create-subscription" data-aos="flip-right">
-                      
-                       <div class="bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
+<div class="col-md-6 p-3 " id="delete-customer" data-aos="flip-right">
+
+        <div class="card shadow-sm" style="height: 30rem;">
+                <div class="card-header border-0" style="background-color: #ebe6e9;">
                         <h3 class="text-center">Create a Subscription</h3>
-                    
+                </div>
+         <div class="card-body m-auto">
+
                                 <form  class="form" method="POST" action="/create-subscription">
                                   <div class="mb-3">
                                        <label for="customerId" class="form-label">Select Customer:</label>
@@ -152,22 +117,88 @@
                                         </div>  
                                         </form>
 
-                                         {{!-- Message --}}
-                                        {{#if message}}
-                                          <p>{{message}}</p>
-                                        {{/if}}
+                                      
 
-                                </div>
-                      
+                        
                         {{#if redirect}}
                            <script>
                                 window.location.href = "/";
                            </script>
                         {{/if}}
+
+
+                        {{!-- Message --}}
+                        {{#if success}}
+                          <p class="success-message">{{message}}</p>
+                         {{else}}
+                         <p class="error-message">{{message}}</p>
+
+                     {{/if}}
+
+
+
+</div>         
 </div>
 
+</div>
+</div>
+
+{{!-- List all Subscriptions --}}
+<div class="section section-createCustomer m-auto p-3" id="list-subscriptions" data-aos="zoom-in-right">
+        <div class="card shadow-sm">
+          <div class="card-header border-0" style="background-color: #ebe6e9;">
+                  <h3 class="text-center">All active Subscriptions</h3>
+         </div>
+         <div class="card-body">
+                  <table class="table p-2 shadow-md">
+                        <thead>
+                        <tr>
+                                <th scope="col">Customer</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Customer Name</th>
+                                <th scope="col">Customer Description</th>
+                                <th scope="col">Billing</th>
+                                <th scope="col">Product</th>
+                                <th scope="col">Created at</th>
+                                <th scope="col">Cancel a Subscription</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {{#each subscriptions}}
+                                <tr>
+                                        <td>{{this.email}}</td>
+                                        <td>{{this.status}}</td>
+                                        <td>{{this.customerName}}</td>
+                                        <td>{{this.customerDescription}}</td>
+                                        <td>{{this.billing}}</td>
+                                        <td>{{this.product}}</td>
+                                        <td>{{this.createdAt}}</td>
+                                        <td>
+                                        <form  class="form" method="POST" action="/cancel-subscription">
+                                                <input type="hidden" value="{{this.sub_id}}"/>
+                                                <input type="hidden" name="_csrf" value="{{csrfToken}}">
+                                                <button type="submit" class="btn btn-outline-danger">cancel</button>   
+                                        </form>
+                                        </td>
+   
+                                       {{!-- Message --}}
+                                        {{#if message}}
+                                                <div class="alert">{{message}}</div>
+                                        {{/if}}
+                                </tr>
+                        {{/each}}
+                        </tbody>
+        </table>             
+        </div>
+</div>
+</div>
+
+
+<div class="row">
+
 {{!-- Cancel a subscription --}}
-<div class="p-3 col-md-4" id="cancel-subscription" data-aos="flip-right">
+<div class="p-3 col-md-6 m-auto m-1" id="cancel-subscription" data-aos="flip-right">
 
                         {{!-- Form --}}
                        <div class=" bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
@@ -178,7 +209,7 @@
                                                 <label for="subscriptionId" class="form-label">Select a Subscription:</label>
                                                 <select name="subscription" id="subscriptionId" required>
                                                 {{#each subscriptions}}    
-                                                        <option value="{{this.sub_id}}">{{this.product}}</option>
+                                                        <option value="{{this.sub_id}}">{{this.product}} -- {{this.customerName}}</option>
                                                 {{/each}}
                                                 </select>
                                                 </div>
@@ -203,7 +234,7 @@
 </div>
 
 {{!-- Delete a Customer --}}
-<div class="col-md-4 p-3 " id="delete-customer" data-aos="flip-right">
+<div class="col-md-6 p-3 m-auto" id="delete-customer" data-aos="flip-right">
 
                         {{!-- Form --}}
                        <div class="bg-white p-5 rounded rounded-sm shadow-sm border-2 borde-pink">
@@ -221,7 +252,7 @@
 
                                         <div class="mb-3">    
                                                 <input type="hidden" name="_csrf" value="{{csrfToken}}"> <br>
-                                                <button type="submit" class="btn btn-outline-danger">Create Subscription</button>
+                                                <button type="submit" class="btn btn-outline-danger">Delete the Customer</button>
                                         </div>  
                                         </form>
 
