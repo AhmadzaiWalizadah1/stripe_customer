@@ -18,14 +18,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 const csrfProtection = csurf({ cookie: true });
 app.use(csrfProtection);
-
-//Get the CSRF token only once in a middleware
-//app.use((req, res, next) => {
-//res.locals.csrfToken = req.csrfToken(); 
-//console.log("Generated CSRF Token:", res.locals.csrfToken); 
-//     next();
-// });
-
 app.use((req, res, next) => {
     // Check if the token is already in locals to avoid multiple generations
     if (!res.locals.csrfToken) {
